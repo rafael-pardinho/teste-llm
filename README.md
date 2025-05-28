@@ -159,71 +159,82 @@ A API estará disponível em `http://localhost:8000`.
 ```mermaid
   classDiagram
   direction LR
-      class UserInterface {
-          +entrypoint(request: Request)
-      }
-      class InputBoundary {
-          +handle(inputData: InputData)
-      }
-      class ChatService {
-          +execute(prompt: string, userId: string)
-      }
-      class OutputBoundary {
-          +present(response: ResponseData)
-      }
-      class RepositoryInterface {
-          +saveChatLog(chatLog: ChatLog)
-          +getChatLogsByUserId(userId: string)
-          +getAllChatLogs()
-      }
-      class ChatRepository {
-          +saveChatLog(chatLog: ChatLog)
-          +getChatLogsByUserId(userId: string)
-          +getAllChatLogs()
-      }
-      class GeminiGateway {
-          +getChatResponse(prompt: string)
-      }
-      class ChatLog {
-          +id: string
-          +userId: string
-          +prompt: string
-          +response: string
-          +timestamp: datetime
-      }
-      class ResponseData {
-        + response: string
-        + userId: string
-        + timestamp: datetime
-      }
-      class InputData{
-        + prompt: string
-        + userId: string
-      }
 
+  class UserInterface {
+    +entrypoint(request: Request)
+  }
+  class InputBoundary { // Conceito: Define a entrada para o caso de uso
+    +handle(inputData: InputData)
+  }
+  class ChatService { // Caso de Uso / Interactor
+    +execute(prompt: string, userId: string)
+  }
+  class OutputBoundary { // Conceito: Define a saída do caso de uso
+    +present(response: ResponseData)
+  }
+  class RepositoryInterface { // Porta do Repositório
+    +saveChatLog(chatLog: ChatLog)
+    +getChatLogsByUserId(userId: string)
+    +getAllChatLogs()
+  }
+  class ChatRepository { // Adaptador: Implementa RepositoryInterface
+    +saveChatLog(chatLog: ChatLog)
+    +getChatLogsByUserId(userId: string)
+    +getAllChatLogs()
+  }
+  class LLMGatewayInterface { // Porta do Gateway de LLM
+    +getChatResponse(prompt: string)
+  }
+  class GeminiGateway { // Adaptador: Implementa LLMGatewayInterface
+    +getChatResponse(prompt: string)
+  }
+  class GoogleGeminiAPI { // Serviço Externo
+  }
+  class ChatLog { // Entidade de Domínio
+    +id: string
+    +userId: string
+    +prompt: string
+    +response: string
+    +timestamp: datetime
+  }
+  class ResponseData { // DTO de Resposta
+    +response: string
+    +userId: string
+    +timestamp: datetime
+  }
+  class InputData{ // DTO de Entrada
+    +prompt: string
+    +userId: string
+  }
 
   %% Define os relacionamentos
-  UserInterface --> InputBoundary: Usa
-  InputBoundary --> ChatService: Usa
-  ChatService --> RepositoryInterface: Usa
-  ChatService --> GeminiGateway: Usa
-  RepositoryInterface --> ChatRepository: Implementa
-  ChatService --> OutputBoundary: Usa
-  ChatRepository --> ChatLog : Usa
-  GeminiGateway --> GoogleGeminiAPI: Usa
+  UserInterface --> InputBoundary : Usa
+  InputBoundary --> ChatService : Usa
+  ChatService --> OutputBoundary : Usa
+  %% A UserInterface então utiliza o OutputBoundary para formatar a resposta final.
 
-  %% Estilização
-  style UserInterface fill:#87CEFA,stroke:#000,stroke-width:2px,color:#000000
-  style InputBoundary fill:#FFFFE0,stroke:#000,stroke-width:2px,color:#000000
-  style ChatService fill:#90EE90,stroke:#000,stroke-width:2px,color:#000000
-  style OutputBoundary fill:#FFFFE0,stroke:#000,stroke-width:2px,color:#000000
-  style RepositoryInterface fill:#87CEFA,stroke:#000,stroke-width:2px,color:#000000
-  style ChatRepository fill:#87CEFA,stroke:#000,stroke-width:2px,color:#000000
-  style GeminiGateway fill:#87CEFA,stroke:#000,stroke-width:2px,color:#000000
-  style ChatLog fill:#D3D3D3,stroke:#000,stroke-width:2px,color:#000000
-  style ResponseData fill:#D3D3D3,stroke:#000,stroke-width:2px,color:#000000
-  style InputData fill:#D3D3D3,stroke:#000,stroke-width:2px,color:#000000
-  style GoogleGeminiAPI fill:#ff6666,stroke:#660000,stroke-width:2px,color:#000000
+  ChatService --> RepositoryInterface : Usa
+  ChatRepository ..|> RepositoryInterface : Implementa
+
+  ChatService --> LLMGatewayInterface : Usa
+  GeminiGateway ..|> LLMGatewayInterface : Implementa
+
+  ChatRepository --> ChatLog : Manipula
+  GeminiGateway --> GoogleGeminiAPI : Comunica com
+
+  %% Estilização (sugestão para diferenciar camadas e tipos de componentes)
+  style UserInterface fill:#ADD8E6,stroke:#000,stroke-width:2px,color:#000000    /* Azul Claro - Camada de UI/Frameworks */
+  style InputBoundary fill:#FFFFE0,stroke:#000,stroke-width:2px,color:#000000    /* Amarelo Claro - Limites da Aplicação */
+  style ChatService fill:#90EE90,stroke:#000,stroke-width:2px,color:#000000      /* Verde Claro - Casos de Uso (Application) */
+  style OutputBoundary fill:#FFFFE0,stroke:#000,stroke-width:2px,color:#000000   /* Amarelo Claro - Limites da Aplicação */
+  style RepositoryInterface fill:#FFDAB9,stroke:#000,stroke-width:2px,color:#000000 /* Laranja Claro - Interfaces (Portas) */
+  style ChatRepository fill:#ADD8E6,stroke:#000,stroke-width:2px,color:#000000     /* Azul Claro - Camada de Infra/Frameworks (Adaptadores) */
+  style LLMGatewayInterface fill:#FFDAB9,stroke:#000,stroke-width:2px,color:#000000 /* Laranja Claro - Interfaces (Portas) */
+  style GeminiGateway fill:#ADD8E6,stroke:#000,stroke-width:2px,color:#000000       /* Azul Claro - Camada de Infra/Frameworks (Adaptadores) */
+  style GoogleGeminiAPI fill:#ff6666,stroke:#660000,stroke-width:2px,color:#000000 /* Vermelho - Serviços Externos */
+  style ChatLog fill:#D3D3D3,stroke:#000,stroke-width:2px,color:#000000           /* Cinza - Entidades de Domínio */
+  style ResponseData fill:#E6E6FA,stroke:#000,stroke-width:2px,color:#000000   /* Lilás Claro - DTOs */
+  style InputData fill:#E6E6FA,stroke:#000,stroke-width:2px,color:#000000     /* Lilás Claro - DTOs */
 ```
 
 Este projeto adota uma arquitetura de microsserviços, onde a aplicação é estruturada como uma coleção de serviços menores e independentes, comunicando-se entre si através de APIs. Cada microsserviço é responsável por uma funcionalidade específica do negócio.
